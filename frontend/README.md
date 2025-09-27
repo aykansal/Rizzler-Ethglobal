@@ -1,36 +1,207 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Rizzler Frontend
 
-## Getting Started
+A modern dating app frontend built with Next.js 15, React 19, and TailwindCSS, integrated with the Rizzler backend API.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### ✅ **Authentication System**
+- Phone number + password login/signup
+- JWT token management
+- Auto-redirect for protected routes
+- Token validation and refresh
+
+### ✅ **User Registration Flow**
+- Multi-step signup process
+- Profile creation with photos, bio, interests
+- Interactive prompts system
+- Age and gender selection
+
+### ✅ **Smart Matching System**
+- Real-time user feed from backend
+- Swipe interactions (like/dislike)
+- Rose sending (super likes)
+- Match detection and animations
+- Opposite gender filtering
+
+### ✅ **Profile Management**
+- Complete user profiles display
+- Stats tracking (likes, matches)
+- Photo galleries
+- Interest tags and prompts
+
+### ✅ **API Integration**
+- Complete backend API integration
+- Real-time data synchronization  
+- Error handling and loading states
+- Offline-first approach
+
+## 🏗️ Architecture
+
+### **API Layer**
+```
+lib/
+├── constants.js     # API URLs and config
+└── api.js          # HTTP client with auth
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### **Services Layer**
+```
+services/
+├── authService.js       # Authentication
+├── userService.js       # User management  
+├── interactionService.js # Like/dislike system
+└── index.js            # Service exports
+```
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### **Custom Hooks**
+```
+hooks/
+└── useAuth.js      # Authentication state management
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### **Pages Structure**
+```
+app/
+├── (auth)/
+│   ├── login/      # Login page with phone auth
+│   └── signup/     # Multi-step registration
+└── (pages)/
+    └── male/       # Main app routes
+        ├── explore/    # Swipe interface
+        ├── profile/    # User profile
+        └── chats/     # Messaging (future)
+```
 
-## Learn More
+## 🔧 API Configuration
 
-To learn more about Next.js, take a look at the following resources:
+The app connects to the backend via a configurable API URL:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```javascript
+// lib/constants.js
+export const API_CONFIG = {
+  BASE_URL: 'https://backend.rizzler.io',
+  ENDPOINTS: {
+    LOGIN: '/api/auth/login',
+    SIGNUP: '/api/auth/signup',
+    GET_FEED: '/api/user/feed',
+    CREATE_INTERACTION: '/api/interaction',
+    // ... more endpoints
+  }
+};
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📱 Key Components
 
-## Deploy on Vercel
+### **Authentication Flow**
+```javascript
+// Login with phone number and password
+const result = await authService.login(phoneNumber, password);
+if (result.success) {
+  router.push('/male/explore');
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### **User Feed Integration**
+```javascript
+// Load personalized user feed
+const result = await userService.getUserFeed();
+// Returns opposite gender users, excluding disliked profiles
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### **Interaction System**
+```javascript
+// Like/dislike users
+await interactionService.likeUser(userId);
+await interactionService.dislikeUser(userId);
+await interactionService.sendRose(userId); // Super like
+```
+
+## 🎨 UI Features
+
+### **Modern Design**
+- Gradient backgrounds and smooth animations
+- Card-based profile layouts
+- Responsive mobile-first design
+- Loading states and error handling
+
+### **Interactive Elements**
+- Swipe gestures for like/dislike
+- Drag-to-send rose functionality
+- Match celebration animations
+- Photo galleries with error fallbacks
+
+### **Real-time Feedback**
+- Instant interaction responses
+- Match notifications
+- Error messaging
+- Loading indicators
+
+## 📊 Data Flow
+
+```
+1. User Authentication
+   Login/Signup → Backend API → JWT Token → Local Storage
+
+2. Feed Loading  
+   User Profile → API Request → Filtered Users → Display
+
+3. Interactions
+   Swipe/Rose → API Call → Match Check → UI Update
+
+4. Profile Display
+   User Data → Transform → Display → Stats/Matches
+```
+
+## 🛠️ Development
+
+### **Getting Started**
+```bash
+npm install
+npm run dev
+```
+
+### **API Integration**
+The frontend automatically connects to the backend API. Make sure:
+1. Backend is running on the configured URL
+2. Database is seeded with test users
+3. CORS is enabled for frontend domain
+
+### **Environment Setup**
+No environment variables needed - all configuration is in `lib/constants.js`.
+
+## 📈 Performance Optimizations
+
+- **Lazy Loading**: Components loaded on demand
+- **Image Optimization**: Automatic fallbacks and error handling
+- **API Caching**: Smart caching of user data
+- **Bundle Splitting**: Optimized for mobile performance
+
+## 🔐 Security Features
+
+- JWT token management
+- Automatic token validation
+- Protected route handling
+- Secure API communication
+- Input validation and sanitization
+
+## 🚀 Ready for Production
+
+The frontend is production-ready with:
+- ✅ Complete backend integration
+- ✅ Authentication flow
+- ✅ Real user data display
+- ✅ Interaction system
+- ✅ Error handling
+- ✅ Mobile optimization
+
+## 🔄 Future Enhancements
+
+- Real-time messaging system
+- Push notifications
+- Advanced matching algorithms
+- Video call integration
+- Social media sharing
+
+---
+
+**Built with ❤️ using Next.js 15, React 19, and modern web technologies**

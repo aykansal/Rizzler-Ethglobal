@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '../../../../component/header.jsx';
 import { SettingsIcon } from 'lucide-react';
+import { userService, interactionService, authService } from '../../../../services/index.js';
 
 const ExplorePage = () => {
+  const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -16,98 +19,116 @@ const ExplorePage = () => {
   const [likedProfiles, setLikedProfiles] = useState([]);
   const [sentRoses, setSentRoses] = useState([]);
   const [showHeartAnimation, setShowHeartAnimation] = useState(false);
+  const [showMatchAnimation, setShowMatchAnimation] = useState(false);
+  const [matchMessage, setMatchMessage] = useState('');
+  const [profiles, setProfiles] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const cardRef = useRef(null);
 
-  // Mock profile data
-  const profiles = [
-    {
-      id: 1,
-      name: 'Sarah',
-      age: 24,
-      bio: 'Love hiking and coffee ☕',
-      photos: [
-        'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=600&fit=crop&crop=face'
-      ],
-      interests: ['Travel', 'Photography', 'Fitness'],
-      prompts: [
-        { question: 'My ideal first date', answer: 'A sunset hike followed by coffee ☕' },
-        { question: 'I\'m weirdly attracted to', answer: 'People who can make me laugh until I cry' },
-        { question: 'The way to my heart', answer: 'Surprise me with my favorite book' }
-      ],
-      bio: 'Love hiking and coffee ☕'
-    },
-    {
-      id: 2,
-      name: 'Alex',
-      age: 26,
-      bio: 'Musician and dog lover 🎵🐕',
-      photos: [
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=600&fit=crop&crop=face'
-      ],
-      interests: ['Music', 'Art', 'Gaming'],
-      prompts: [
-        { question: 'My most irrational fear', answer: 'That my dog will learn to talk and judge me' },
-        { question: 'I\'m a great +1 because', answer: 'I can play any song on guitar' },
-        { question: 'The way to my heart', answer: 'Share your favorite playlist with me' }
-      ],
-      bio: 'Musician and dog lover 🎵🐕'
-    },
-    {
-      id: 3,
-      name: 'Emma',
-      age: 23,
-      bio: 'Foodie and adventure seeker 🍕',
-      photos: [
-        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7b?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400&h=600&fit=crop&crop=face'
-      ],
-      interests: ['Food', 'Travel', 'Movies'],
-      prompts: [
-        { question: 'My most irrational fear', answer: 'Running out of good food options' },
-        { question: 'I\'m a great +1 because', answer: 'I know all the best restaurants in town' },
-        { question: 'The way to my heart', answer: 'Take me to a hidden gem restaurant' }
-      ],
-      bio: 'Foodie and adventure seeker 🍕'
-    },
-    {
-      id: 4,
-      name: 'James',
-      age: 28,
-      bio: 'Tech enthusiast and fitness junkie 💻',
-      photos: [
-        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=600&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=600&fit=crop&crop=face'
-      ],
-      interests: ['Technology', 'Fitness', 'Reading'],
-      prompts: [
-        { question: 'My most irrational fear', answer: 'My code will become sentient and judge me' },
-        { question: 'I\'m a great +1 because', answer: 'I can fix any tech problem' },
-        { question: 'The way to my heart', answer: 'Challenge me to a coding competition' }
-      ],
-      bio: 'Tech enthusiast and fitness junkie 💻'
-    }
-  ];
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!authService.isAuthenticated()) {
+        router.push('/login');
+        return;
+      }
 
-  const handleSwipe = (direction) => {
+      try {
+        const isValid = await authService.validateToken();
+        if (!isValid) {
+          router.push('/login');
+          return;
+        }
+      } catch (error) {
+        console.error('Auth validation failed:', error);
+        router.push('/login');
+        return;
+      }
+
+      // Load user feed
+      await loadUserFeed();
+    };
+
+    checkAuth();
+  }, [router]);
+
+  // Load user feed from backend
+  const loadUserFeed = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const result = await userService.getUserFeed();
+      
+      if (result.success && result.users) {
+        // Transform backend data to match frontend format
+        const transformedProfiles = result.users.map(user => ({
+          id: user.id,
+          name: user.name,
+          age: user.age,
+          bio: user.bio || 'No bio available',
+          photos: user.images && user.images.length > 0 
+            ? user.images 
+            : ['https://via.placeholder.com/400x600?text=No+Photo'],
+          interests: user.interests || [],
+          prompts: user.prompts || [],
+          gender: user.gender,
+          upvotes: user.upvotes,
+          downvotes: user.downvotes
+        }));
+        
+        setProfiles(transformedProfiles);
+        console.log(`📱 Loaded ${transformedProfiles.length} profiles for feed`);
+      } else {
+        setProfiles([]);
+        setError(result.message || 'No profiles available');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load user feed:', error);
+      setError('Failed to load profiles. Please try again.');
+      setProfiles([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSwipe = async (direction) => {
     if (isAnimating || currentIndex >= profiles.length) return;
     
     setIsAnimating(true);
     
-    if (direction === 'like') {
-      console.log('Liked:', profiles[currentIndex].name);
-      setLikedProfiles(prev => [...prev, profiles[currentIndex].id]);
-    } else {
-      console.log('Skipped:', profiles[currentIndex].name);
+    const currentProfile = profiles[currentIndex];
+    
+    try {
+      if (direction === 'like') {
+        console.log('👍 Liking:', currentProfile.name);
+        const result = await interactionService.likeUser(currentProfile.id);
+        
+        if (result.success) {
+          setLikedProfiles(prev => [...prev, currentProfile.id]);
+          
+          if (result.isMatch) {
+            setMatchMessage(result.message);
+            setShowMatchAnimation(true);
+            // Hide match animation after 3 seconds
+            setTimeout(() => setShowMatchAnimation(false), 3000);
+          }
+        } else {
+          console.error('Like failed:', result.message);
+        }
+      } else {
+        console.log('👎 Disliking:', currentProfile.name);
+        const result = await interactionService.dislikeUser(currentProfile.id);
+        
+        if (result.success) {
+          console.log('Dislike successful');
+        } else {
+          console.error('Dislike failed:', result.message);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Interaction error:', error);
     }
     
     setTimeout(() => {
@@ -116,26 +137,40 @@ const ExplorePage = () => {
     }, 300);
   };
 
-  const handleRoseSend = () => {
+  const handleRoseSend = async () => {
     if (isAnimating) return;
     
     const currentProfile = profiles[currentIndex];
-    console.log('🌹 Rose sent to:', currentProfile.name);
-    setSentRoses(prev => [...prev, currentProfile.id]);
+    console.log('🌹 Sending rose to:', currentProfile.name);
     
-    // Auto-like when sending a rose
-    if (!likedProfiles.includes(currentProfile.id)) {
-      setLikedProfiles(prev => [...prev, currentProfile.id]);
+    try {
+      const result = await interactionService.sendRose(currentProfile.id);
+      
+      if (result.success) {
+        setSentRoses(prev => [...prev, currentProfile.id]);
+        setLikedProfiles(prev => [...prev, currentProfile.id]);
+        
+        // Show heart animation
+        setShowHeartAnimation(true);
+        
+        if (result.isMatch) {
+          setMatchMessage(result.message);
+          setShowMatchAnimation(true);
+          // Hide match animation after 3 seconds
+          setTimeout(() => setShowMatchAnimation(false), 3000);
+        }
+        
+        // Hide heart animation and move to next profile
+        setTimeout(() => {
+          setShowHeartAnimation(false);
+          setCurrentIndex(prev => prev + 1);
+        }, 1000);
+      } else {
+        console.error('Rose send failed:', result.message);
+      }
+    } catch (error) {
+      console.error('❌ Rose send error:', error);
     }
-    
-    // Show heart animation
-    setShowHeartAnimation(true);
-    
-    // Hide animation after 2 seconds and move to next profile
-    setTimeout(() => {
-      setShowHeartAnimation(false);
-      setCurrentIndex(prev => prev + 1);
-    }, 1000);
   };
 
   const goToPreviousProfile = () => {
@@ -331,28 +366,69 @@ const ExplorePage = () => {
     handleRoseEnd();
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="h-[100vh-4rem] relative flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-signature-2 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading amazing people...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="h-[100vh-4rem] relative flex items-center justify-center">
+        <div className="max-w-md w-full space-y-6 bg-white p-6 rounded-lg shadow-md text-center mx-4">
+          <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--signature)' }}>
+            Oops! Something went wrong
+          </h1>
+          <p className="text-sm text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={loadUserFeed}
+            className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-md transform hover:scale-105"
+            style={{
+              background: 'linear-gradient(135deg, var(--signature) 0%, var(--signature-2) 100%)'
+            }}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const currentProfile = profiles[currentIndex];
 
+  // No more profiles
   if (currentIndex >= profiles.length) {
     return (
-      <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)' }}>
-        <Header />
-        <div className="flex items-center justify-center py-8 px-4">
-          <div className="max-w-md w-full space-y-6 bg-white p-6 rounded-lg shadow-md text-center">
-            <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--signature)' }}>
-              No More Profiles
-            </h1>
-            <p className="text-sm text-gray-600">
-              You've seen all available profiles! Check back later for new matches.
-            </p>
+      <div className="h-[100vh-4rem] relative flex items-center justify-center">
+        <div className="max-w-md w-full space-y-6 bg-white p-6 rounded-lg shadow-md text-center mx-4">
+          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--signature)' }}>
+            No More Profiles
+          </h1>
+          <p className="text-sm text-gray-600">
+            You've seen all available profiles! Check back later for new matches.
+          </p>
+          <div className="space-y-2">
             <button
-              onClick={() => setCurrentIndex(0)}
-              className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-md transform hover:scale-105"
+              onClick={loadUserFeed}
+              className="w-full px-6 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:shadow-md transform hover:scale-105"
               style={{
                 background: 'linear-gradient(135deg, var(--signature) 0%, var(--signature-2) 100%)'
               }}
             >
-              Start Over
+              Refresh Feed
+            </button>
+            <button
+              onClick={() => setCurrentIndex(0)}
+              className="w-full px-6 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium transition-all duration-200 hover:shadow-md"
+            >
+              Review Profiles Again
             </button>
           </div>
         </div>
@@ -414,8 +490,16 @@ const ExplorePage = () => {
                   {currentProfile.name}, {currentProfile.age}
                 </h2>
                 <p className="text-sm opacity-90 mt-1">
-                  He/Him
+                  {currentProfile.gender === 'MALE' ? 'He/Him' : 
+                   currentProfile.gender === 'FEMALE' ? 'She/Her' : 'They/Them'}
                 </p>
+                {currentProfile.upvotes > 0 && (
+                  <div className="flex items-center mt-1">
+                    <span className="text-xs bg-white/20 rounded-full px-2 py-1">
+                      ❤️ {currentProfile.upvotes} likes
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -447,13 +531,18 @@ const ExplorePage = () => {
             <div className="px-6 pb-6">
               <div className="space-y-6">
                 {/* Photo 2 */}
-                <div className="relative h-64 rounded-lg overflow-hidden">
-                  <img
-                    src={currentProfile.photos[1]}
-                    alt={`${currentProfile.name} photo 2`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                {currentProfile.photos[1] && (
+                  <div className="relative h-64 rounded-lg overflow-hidden">
+                    <img
+                      src={currentProfile.photos[1]}
+                      alt={`${currentProfile.name} photo 2`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/400x600?text=Photo+Unavailable';
+                      }}
+                    />
+                  </div>
+                )}
 
                 {/* Random Prompt 1 */}
                 {currentProfile.prompts[0] && (
@@ -468,13 +557,18 @@ const ExplorePage = () => {
                 )}
 
                 {/* Photo 3 */}
-                <div className="relative h-64 rounded-lg overflow-hidden">
-                  <img
-                    src={currentProfile.photos[2]}
-                    alt={`${currentProfile.name} photo 3`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                {currentProfile.photos[2] && (
+                  <div className="relative h-64 rounded-lg overflow-hidden">
+                    <img
+                      src={currentProfile.photos[2]}
+                      alt={`${currentProfile.name} photo 3`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/400x600?text=Photo+Unavailable';
+                      }}
+                    />
+                  </div>
+                )}
 
                 {/* Random Prompt 2 */}
                 {currentProfile.prompts[1] && (
@@ -489,13 +583,18 @@ const ExplorePage = () => {
                 )}
 
                 {/* Photo 4 */}
-                <div className="relative h-64 rounded-lg overflow-hidden">
-                  <img
-                    src={currentProfile.photos[3]}
-                    alt={`${currentProfile.name} photo 4`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                {currentProfile.photos[3] && (
+                  <div className="relative h-64 rounded-lg overflow-hidden">
+                    <img
+                      src={currentProfile.photos[3]}
+                      alt={`${currentProfile.name} photo 4`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/400x600?text=Photo+Unavailable';
+                      }}
+                    />
+                  </div>
+                )}
 
                 {/* Random Prompt 3 */}
                 {currentProfile.prompts[2] && (
@@ -533,6 +632,22 @@ const ExplorePage = () => {
                <div className="text-2xl font-bold text-red-500 animate-pulse">
                  💕 Rose Sent! 💕
                </div>
+             </div>
+           </div>
+         )}
+
+         {/* Match Animation */}
+         {showMatchAnimation && (
+           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 bg-black/50">
+             <div className="bg-white rounded-2xl p-8 text-center max-w-sm mx-4 animate-bounce">
+               <div className="text-6xl mb-4">🎉</div>
+               <h2 className="text-2xl font-bold text-signature-2 mb-2">
+                 It's a Match!
+               </h2>
+               <p className="text-gray-600 mb-4">
+                 {matchMessage}
+               </p>
+               <div className="text-4xl">💕</div>
              </div>
            </div>
          )}
