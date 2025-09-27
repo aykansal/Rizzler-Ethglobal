@@ -20,7 +20,7 @@ enum InteractionType {
 model User {
   id          String   @id @default(uuid())
   nfcId       String   @unique
-  images      String[]
+  images      String[] // Array of photo URLs
   name        String
   age         Int?
   gender      Gender
@@ -32,25 +32,28 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  bio         String?  // User bio/description
+  prompts     Json[]   // Array of {question: string, answer: string} objects
+
   // Relations
-  sentMessages     Message[]     @relation("SentMessages")
-  receivedMessages Message[]     @relation("ReceivedMessages")
-  sentInteractions Interaction[] @relation("SentInteractions")
+  sentMessages         Message[]     @relation("SentMessages")
+  receivedMessages     Message[]     @relation("ReceivedMessages")
+  sentInteractions     Interaction[] @relation("SentInteractions")
   receivedInteractions Interaction[] @relation("ReceivedInteractions")
 
   @@map("users")
 }
 
 model Message {
-  id         String   @id @default(uuid())
-  content    String
-  createdAt  DateTime @default(now())
-  
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+
   senderId   String
   receiverId String
-  
-  sender     User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver   User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@map("messages")
 }
@@ -59,14 +62,13 @@ model Interaction {
   id        String          @id @default(uuid())
   type      InteractionType
   createdAt DateTime        @default(now())
-  
+
   fromUserId String
   toUserId   String
-  
+
   fromUser User @relation("SentInteractions", fields: [fromUserId], references: [id], onDelete: Cascade)
   toUser   User @relation("ReceivedInteractions", fields: [toUserId], references: [id], onDelete: Cascade)
 
   @@unique([fromUserId, toUserId])
   @@map("interactions")
 }
-
