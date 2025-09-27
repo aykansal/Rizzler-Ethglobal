@@ -45,14 +45,14 @@ const Header = () => {
                 Contact
               </a>
               <a
-                href="/login"
+                href="/explore"
                 className="px-3 py-2 rounded-md text-sm font-medium text-white transition-colors duration-200 hover:shadow-md"
                 style={{ 
                   backgroundColor: 'var(--signature)',
                   backgroundImage: 'linear-gradient(135deg, var(--signature) 0%, var(--signature-2) 100%)'
                 }}
               >
-                Login
+                Explore
               </a>
             </div>
           </nav>
@@ -174,7 +174,7 @@ const Header = () => {
             </a>
             <div className="pt-4">
               <a
-                href="/login"
+                href="/explore"
                 className="flex items-center justify-center px-4 py-3 rounded-lg text-base font-medium text-white transition-all duration-200 hover:shadow-lg hover:scale-105 transform"
                 style={{ 
                   backgroundColor: 'var(--signature)',
@@ -182,7 +182,7 @@ const Header = () => {
                 }}
                 onClick={() => setIsMenuOpen(false)}
               >
-                Login
+                Explore
               </a>
             </div>
           </nav>

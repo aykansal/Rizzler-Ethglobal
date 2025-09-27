@@ -385,7 +385,7 @@ const SignupPage = () => {
           {/* Progress Bar */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
-              <h1 className="text-xl font-bold" style={{ color: 'var(--signature)' }}>
+              <h1 className="text-lg font-bold" style={{ color: 'var(--signature)' }}>
                 Create Account
               </h1>
               <span className="text-xs text-gray-500">
