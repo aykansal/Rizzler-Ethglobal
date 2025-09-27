@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '../../../component/header.jsx';
+import { authService } from '../../../services/index.js';
 
 const LoginPage = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
-    email: '',
+    phoneNumber: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -30,10 +33,10 @@ const LoginPage = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    if (!formData.phoneNumber) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (!/^[\+]?[1-9][\d]{9,15}$/.test(formData.phoneNumber.replace(/\s/g, ''))) {
+      newErrors.phoneNumber = 'Please enter a valid phone number';
     }
     
     if (!formData.password) {
@@ -56,12 +59,22 @@ const LoginPage = () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Login attempt:', formData);
-      // Handle successful login here
+      const result = await authService.login(formData.phoneNumber, formData.password);
+      
+      if (result.success) {
+        console.log('✅ Login successful:', result.user?.name);
+        // Redirect to main app (explore page)
+        router.push('/male/explore');
+      } else {
+        setErrors({ 
+          general: result.message || 'Login failed. Please check your credentials.' 
+        });
+      }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
+      setErrors({ 
+        general: 'Network error. Please check your connection.' 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -82,35 +95,42 @@ const LoginPage = () => {
           </p>
         </div>
 
+        {/* Error Message */}
+        {errors.general && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-600 text-center">{errors.general}</p>
+          </div>
+        )}
+
         {/* Login Form */}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-3">
-            {/* Email Field */}
+            {/* Phone Number Field */}
             <div>
-              <label htmlFor="email" className="block text-xs font-medium mb-1" style={{ color: 'var(--foreground)' }}>
-                Email Address
+              <label htmlFor="phoneNumber" className="block text-xs font-medium mb-1" style={{ color: 'var(--foreground)' }}>
+                Phone Number
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
+                id="phoneNumber"
+                name="phoneNumber"
+                type="tel"
+                autoComplete="tel"
                 required
-                value={formData.email}
+                value={formData.phoneNumber}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-md text-sm transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-offset-1 ${
-                  errors.email 
+                  errors.phoneNumber 
                     ? 'border-red-500 focus:ring-red-500' 
                     : 'border-gray-300 focus:ring-blue-500'
                 }`}
                 style={{
                   backgroundColor: 'white',
-                  borderColor: errors.email ? '#DC143C' : '#D1D5DB'
+                  borderColor: errors.phoneNumber ? '#DC143C' : '#D1D5DB'
                 }}
-                placeholder="Enter your email"
+                placeholder="Enter your phone number (e.g., +1234567890)"
               />
-              {errors.email && (
-                <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+              {errors.phoneNumber && (
+                <p className="mt-1 text-xs text-red-600">{errors.phoneNumber}</p>
               )}
             </div>
 

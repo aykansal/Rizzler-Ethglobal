@@ -1,9 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '../../../component/header.jsx';
+import { authService } from '../../../services/index.js';
+import { GENDER_OPTIONS } from '../../../lib/constants.js';
 
 const SignupPage = () => {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     // Step 1: Basic Details
@@ -11,9 +15,17 @@ const SignupPage = () => {
     phone: '',
     password: '',
     confirmPassword: '',
+    age: '',
+    gender: '',
+    bio: '',
     
-    // Step 2: Interests
+    // Step 2: Interests & Prompts
     interests: [],
+    prompts: [
+      { question: 'My ideal first date', answer: '' },
+      { question: 'I\'m weirdly attracted to', answer: '' },
+      { question: 'The way to my heart', answer: '' }
+    ],
     
     // Step 3: Photos
     photos: []
@@ -62,6 +74,15 @@ const SignupPage = () => {
     }));
   };
 
+  const handlePromptChange = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      prompts: prev.prompts.map((prompt, i) => 
+        i === index ? { ...prompt, [field]: value } : prompt
+      )
+    }));
+  };
+
   const handlePhotoChange = (e, index) => {
     const file = e.target.files[0];
     if (file) {
@@ -83,7 +104,7 @@ const SignupPage = () => {
     
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
-    } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/\s/g, ''))) {
+    } else if (!/^[\+]?[1-9][\d]{9,15}$/.test(formData.phone.replace(/\s/g, ''))) {
       newErrors.phone = 'Please enter a valid phone number';
     }
     
@@ -97,6 +118,14 @@ const SignupPage = () => {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    if (!formData.age || formData.age < 18) {
+      newErrors.age = 'Age must be 18 or older';
+    }
+    
+    if (!formData.gender) {
+      newErrors.gender = 'Gender is required';
     }
     
     setErrors(newErrors);
@@ -145,12 +174,42 @@ const SignupPage = () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Signup data:', formData);
-      // Handle successful signup here
+      // Convert photos to URLs (in real app, you'd upload to cloud storage)
+      const photoUrls = formData.photos
+        .filter(photo => photo)
+        .map((photo, index) => `https://via.placeholder.com/400x600?text=Photo+${index + 1}`);
+      
+      // Filter out prompts with empty answers
+      const completedPrompts = formData.prompts.filter(prompt => prompt.answer.trim());
+      
+      const signupData = {
+        name: formData.name,
+        phone: formData.phone,
+        password: formData.password,
+        age: formData.age ? parseInt(formData.age) : undefined,
+        gender: formData.gender,
+        bio: formData.bio,
+        interests: formData.interests,
+        prompts: completedPrompts,
+        photos: photoUrls
+      };
+      
+      const result = await authService.signup(signupData);
+      
+      if (result.success) {
+        console.log('✅ Signup successful:', result.user?.name);
+        // Redirect to main app (explore page)
+        router.push('/male/explore');
+      } else {
+        setErrors({ 
+          general: result.message || 'Signup failed. Please try again.' 
+        });
+      }
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error('❌ Signup error:', error);
+      setErrors({ 
+        general: 'Network error. Please check your connection.' 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -265,54 +324,179 @@ const SignupPage = () => {
           <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>
         )}
       </div>
+
+      <div>
+        <label htmlFor="age" className="block text-xs font-medium mb-1" style={{ color: 'var(--foreground)' }}>
+          Age
+        </label>
+        <input
+          id="age"
+          name="age"
+          type="number"
+          min="18"
+          max="100"
+          required
+          value={formData.age}
+          onChange={handleInputChange}
+          className={`w-full px-3 py-2 border rounded-md text-sm transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-offset-1 ${
+            errors.age 
+              ? 'border-red-500 focus:ring-red-500' 
+              : 'border-gray-300 focus:ring-blue-500'
+          }`}
+          style={{
+            backgroundColor: 'white',
+            borderColor: errors.age ? '#DC143C' : '#D1D5DB'
+          }}
+          placeholder="Enter your age"
+        />
+        {errors.age && (
+          <p className="mt-1 text-xs text-red-600">{errors.age}</p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="gender" className="block text-xs font-medium mb-1" style={{ color: 'var(--foreground)' }}>
+          Gender
+        </label>
+        <select
+          id="gender"
+          name="gender"
+          required
+          value={formData.gender}
+          onChange={handleInputChange}
+          className={`w-full px-3 py-2 border rounded-md text-sm transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-offset-1 ${
+            errors.gender 
+              ? 'border-red-500 focus:ring-red-500' 
+              : 'border-gray-300 focus:ring-blue-500'
+          }`}
+          style={{
+            backgroundColor: 'white',
+            borderColor: errors.gender ? '#DC143C' : '#D1D5DB'
+          }}
+        >
+          <option value="">Select your gender</option>
+          {GENDER_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {errors.gender && (
+          <p className="mt-1 text-xs text-red-600">{errors.gender}</p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="bio" className="block text-xs font-medium mb-1" style={{ color: 'var(--foreground)' }}>
+          Bio (Optional)
+        </label>
+        <textarea
+          id="bio"
+          name="bio"
+          rows={3}
+          maxLength={500}
+          value={formData.bio}
+          onChange={handleInputChange}
+          className={`w-full px-3 py-2 border rounded-md text-sm transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-offset-1 resize-none ${
+            errors.bio 
+              ? 'border-red-500 focus:ring-red-500' 
+              : 'border-gray-300 focus:ring-blue-500'
+          }`}
+          style={{
+            backgroundColor: 'white',
+            borderColor: errors.bio ? '#DC143C' : '#D1D5DB'
+          }}
+          placeholder="Tell others about yourself..."
+        />
+        <p className="mt-1 text-xs text-gray-500">
+          {formData.bio.length}/500 characters
+        </p>
+        {errors.bio && (
+          <p className="mt-1 text-xs text-red-600">{errors.bio}</p>
+        )}
+      </div>
     </div>
   );
 
   const renderStep2 = () => (
-    <div className="space-y-4">
-      <div className="text-center mb-4">
-        <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--foreground)' }}>
-          What interests you?
-        </h3>
-        <p className="text-xs text-gray-600">Select your interests to help us personalize your experience</p>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-2">
-        {interests.map((interest) => (
-          <label
-            key={interest.id}
-            className={`relative flex items-center p-3 rounded-lg border cursor-pointer transition-all duration-200 hover:scale-105 ${
-              formData.interests.includes(interest.id)
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 bg-white hover:border-gray-300'
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={formData.interests.includes(interest.id)}
-              onChange={() => handleInterestChange(interest.id)}
-              className="sr-only"
-            />
-            <div className="flex items-center space-x-2 w-full">
-              <span className="text-lg">{interest.icon}</span>
-              <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>
-                {interest.label}
-              </span>
-            </div>
-            {formData.interests.includes(interest.id) && (
-              <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
+    <div className="space-y-6">
+      {/* Interests Section */}
+      <div>
+        <div className="text-center mb-4">
+          <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--foreground)' }}>
+            What interests you?
+          </h3>
+          <p className="text-xs text-gray-600">Select your interests to help us personalize your experience</p>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-2">
+          {interests.map((interest) => (
+            <label
+              key={interest.id}
+              className={`relative flex items-center p-3 rounded-lg border cursor-pointer transition-all duration-200 hover:scale-105 ${
+                formData.interests.includes(interest.id)
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={formData.interests.includes(interest.id)}
+                onChange={() => handleInterestChange(interest.id)}
+                className="sr-only"
+              />
+              <div className="flex items-center space-x-2 w-full">
+                <span className="text-lg">{interest.icon}</span>
+                <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>
+                  {interest.label}
+                </span>
               </div>
-            )}
-          </label>
-        ))}
+              {formData.interests.includes(interest.id) && (
+                <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                  <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </label>
+          ))}
+        </div>
+        
+        {errors.interests && (
+          <p className="text-xs text-red-600 text-center mt-2">{errors.interests}</p>
+        )}
       </div>
-      
-      {errors.interests && (
-        <p className="text-xs text-red-600 text-center">{errors.interests}</p>
-      )}
+
+      {/* Prompts Section */}
+      <div>
+        <div className="text-center mb-4">
+          <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--foreground)' }}>
+            Tell us more about yourself
+          </h3>
+          <p className="text-xs text-gray-600">Answer these prompts to showcase your personality (optional)</p>
+        </div>
+        
+        <div className="space-y-4">
+          {formData.prompts.map((prompt, index) => (
+            <div key={index} className="bg-gray-50 rounded-lg p-4">
+              <p className="text-sm font-semibold text-gray-700 mb-2">
+                {prompt.question}
+              </p>
+              <textarea
+                rows={2}
+                maxLength={200}
+                value={prompt.answer}
+                onChange={(e) => handlePromptChange(index, 'answer', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                placeholder="Your answer..."
+              />
+              <p className="mt-1 text-xs text-gray-500 text-right">
+                {prompt.answer.length}/200
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -402,6 +586,13 @@ const SignupPage = () => {
               ></div>
             </div>
           </div>
+
+          {/* Error Message */}
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600 text-center">{errors.general}</p>
+            </div>
+          )}
 
           {/* Form Steps */}
           <form onSubmit={handleSubmit} className='max-h-[60vh] overflow-y-auto'>
