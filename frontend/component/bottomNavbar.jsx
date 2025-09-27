@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 
 const BottomNavbar = () => {
   const [activeTab, setActiveTab] = useState('explore');
-
+  const router = useRouter();
+  const pathname = usePathname();
   const navItems = [
     {
       id: 'profile',
@@ -34,6 +36,13 @@ const BottomNavbar = () => {
               onClick={(e) => {
                 e.preventDefault();
                 setActiveTab(item.id);
+                let href = item.href;
+                if (pathname.includes('male')) {
+                  href = `/male${item.href}`;
+                } else if (pathname.includes('female')) {
+                  href = `/female${item.href}`;
+                }
+                router.push(href);
               }}
               className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 ease-out ${
                 activeTab === item.id
