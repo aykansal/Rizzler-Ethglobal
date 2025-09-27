@@ -16,6 +16,7 @@ const ExplorePage = () => {
   const [likedProfiles, setLikedProfiles] = useState([]);
   const [sentRoses, setSentRoses] = useState([]);
   const [showHeartAnimation, setShowHeartAnimation] = useState(false);
+  const [rosesRemaining, setRosesRemaining] = useState(5); // Starting with 5 roses
   const cardRef = useRef(null);
 
   // Mock profile data
@@ -117,11 +118,12 @@ const ExplorePage = () => {
   };
 
   const handleRoseSend = () => {
-    if (isAnimating) return;
+    if (isAnimating || rosesRemaining <= 0) return;
     
     const currentProfile = profiles[currentIndex];
     console.log('🌹 Rose sent to:', currentProfile.name);
     setSentRoses(prev => [...prev, currentProfile.id]);
+    setRosesRemaining(prev => prev - 1);
     
     // Auto-like when sending a rose
     if (!likedProfiles.includes(currentProfile.id)) {
@@ -364,7 +366,29 @@ const ExplorePage = () => {
     <div className="h-[100vh-4rem] relative">
       {/* <Header /> */}
       <div className='h-12 flex items-center justify-between px-4'>
-          <div></div>
+          <div className="flex items-center space-x-2 mt-2">
+            <div className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors duration-200 ${
+              rosesRemaining === 0 
+                ? 'bg-gray-100' 
+                : rosesRemaining <= 2 
+                ? 'bg-orange-50' 
+                : 'bg-pink-50'
+            }`}>
+              <img src="/rose.png" alt="Rose" className="w-5 h-5" />
+              <span className={`text-md font-medium transition-colors duration-200 ${
+                rosesRemaining === 0 
+                  ? 'text-gray-500' 
+                  : rosesRemaining <= 2 
+                  ? 'text-orange-600' 
+                  : 'text-pink-600'
+              }`}>
+                {rosesRemaining}
+              </span>
+            </div>
+            {rosesRemaining === 0 && (
+              <span className="text-xs text-gray-500">No roses left</span>
+            )}
+          </div>
           <h2 className='text-2xl font-semibold -mb-3 text-signature-2'>Rizzler</h2>
           <SettingsIcon className='w-5 h-5 mt-3' />
       </div>
@@ -555,10 +579,10 @@ const ExplorePage = () => {
                onTouchStart={handleRoseTouchStart}
                onTouchMove={handleRoseTouchMove}
                onTouchEnd={handleRoseTouchEnd}
-               disabled={isAnimating}
+               disabled={isAnimating || rosesRemaining <= 0}
                className="w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 disabled:opacity-50 active:scale-95 bg-white/80"
                style={{
-                 boxShadow: '0 10px 25px rgba(236, 72, 153, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                 boxShadow: rosesRemaining > 0 ? '0 10px 25px rgba(236, 72, 153, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)' : '0 4px 12px rgba(0, 0, 0, 0.1)'
                }}
              >
                {/* Rose Icon */}
