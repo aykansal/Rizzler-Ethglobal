@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum InteractionType {
+  LIKE
+  DISLIKE
+}
+
+model User {
+  id          String   @id @default(uuid())
+  nfcId       String   @unique
+  images      String[]
+  name        String
+  age         Int?
+  gender      Gender
+  phoneNumber String   @unique
+  password    String
+  interests   String[]
+  upvotes     Int      @default(0)
+  downvotes   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  sentMessages     Message[]     @relation("SentMessages")
+  receivedMessages Message[]     @relation("ReceivedMessages")
+  sentInteractions Interaction[] @relation("SentInteractions")
+  receivedInteractions Interaction[] @relation("ReceivedInteractions")
+
+  @@map("users")
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  createdAt  DateTime @default(now())
+  
+  senderId   String
+  receiverId String
+  
+  sender     User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Interaction {
+  id        String          @id @default(uuid())
+  type      InteractionType
+  createdAt DateTime        @default(now())
+  
+  fromUserId String
+  toUserId   String
+  
+  fromUser User @relation("SentInteractions", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("ReceivedInteractions", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@map("interactions")
+}
+
