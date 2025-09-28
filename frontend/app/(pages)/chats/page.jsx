@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Header from '../../../../component/header.jsx';
+import Header from '../../../component/header.jsx';
 import { SearchIcon, MoreVerticalIcon, SendIcon, HeartIcon, SmileIcon, ImageIcon } from 'lucide-react';
 
 const ChatsPage = () => {

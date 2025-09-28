@@ -1,5 +1,5 @@
-import * as bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 export const hashPassword = async (password: string): Promise<string> => {
   const saltRounds = 10;

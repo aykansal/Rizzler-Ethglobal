@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '../../../../component/header.jsx';
+import Header from '../../../component/header.jsx';
 import { SettingsIcon } from 'lucide-react';
-import { userService, interactionService, authService } from '../../../../services/index.js';
+import { userService, interactionService, authService } from '../../../services/index.js';
 
 const ExplorePage = () => {
   const router = useRouter();
@@ -24,7 +24,7 @@ const ExplorePage = () => {
   const [profiles, setProfiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [rosesRemaining, setRosesRemaining] = useState(5); // Starting with 5 roses
+  const [rosesRemaining, setRosesRemaining] = useState(5);
   const cardRef = useRef(null);
 
   // Check authentication on mount
@@ -276,13 +276,37 @@ const ExplorePage = () => {
     if (!isRoseDragging || isAnimating) return;
     
     const deltaY = roseDragCurrent.y - roseDragStart.y;
+    const deltaX = roseDragCurrent.x - roseDragStart.x;
     const roseThreshold = 150; // Half screen threshold for rose
     
+    // For female profiles, add swipe gestures
+    if (currentProfile.gender === 'FEMALE') {
+      // Swipe down to accept/match
+      if (deltaY > roseThreshold) {
+        console.log('🌹 Female profile: Swipe down to accept');
+        handleSwipe('like'); // Accept the match
+        setIsRoseDragging(false);
+        return;
+      }
+      
+      // Swipe left or right to reject
+      if (Math.abs(deltaX) > roseThreshold) {
+        console.log('🌹 Female profile: Swipe left/right to reject');
+        handleSwipe('skip'); // Reject the match
+        setIsRoseDragging(false);
+        return;
+      }
+    }
+    
+    // Original rose send functionality (for male profiles or when no swipe detected)
     if (deltaY < -roseThreshold) {
       // Rose sent! Trigger rose send action
       handleRoseSend();
+      setIsRoseDragging(false);
+      return;
     }
     
+    // Reset transform if no action was triggered
     setIsRoseDragging(false);
   };
 
@@ -662,13 +686,15 @@ const ExplorePage = () => {
          )}
 
          {/* Rose Button */}
-         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+         <div className={currentProfile.gender === 'MALE' ? "absolute bottom-8 left-1/2 transform -translate-x-1/2" : "absolute top-16 right-1/2 transform translate-x-1/2"}>
            <div
              className="relative transition-all duration-300 ease-out"
              style={{
                transform: isRoseDragging 
-                 ? `translateY(${Math.min(roseDragCurrent.y - roseDragStart.y, 0)}px) scale(${1 + Math.abs(roseDragCurrent.y - roseDragStart.y) / 200})`
-                 : 'translateY(0px) scale(1)'
+                 ? currentProfile.gender === 'FEMALE' 
+                   ? `translateY(${roseDragCurrent.y - roseDragStart.y}px) translateX(${roseDragCurrent.x - roseDragStart.x}px) scale(${1 + Math.abs(roseDragCurrent.y - roseDragStart.y) / 200})`
+                   : `translateY(${Math.min(roseDragCurrent.y - roseDragStart.y, 0)}px) scale(${1 + Math.abs(roseDragCurrent.y - roseDragStart.y) / 200})`
+                 : 'translateY(0px) translateX(0px) scale(1)'
              }}
            >
              <button
@@ -692,7 +718,14 @@ const ExplorePage = () => {
              {/* Drag indicator */}
              {isRoseDragging && (
                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-pink-500 font-semibold text-sm whitespace-nowrap">
-                 {Math.abs(roseDragCurrent.y - roseDragStart.y) > 150 ? 'Send Rose! 🌹' : 'Drag up to send'}
+                 {currentProfile.gender === 'FEMALE' ? (
+                   Math.abs(roseDragCurrent.y - roseDragStart.y) > 150 ? 
+                     (roseDragCurrent.y - roseDragStart.y > 0 ? 'Accept! 💕' : 'Drag down to accept') :
+                   Math.abs(roseDragCurrent.x - roseDragStart.x) > 150 ?
+                     'Reject! 👎' : 'Swipe down to accept, left/right to reject'
+                 ) : (
+                   Math.abs(roseDragCurrent.y - roseDragStart.y) > 150 ? 'Send Rose! 🌹' : 'Drag up to send'
+                 )}
                </div>
              )}
            </div>

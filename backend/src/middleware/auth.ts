@@ -9,6 +9,7 @@ declare global {
         id: string;
         nfcId: string;
         phoneNumber: string;
+        gender: string;
       };
     }
   }
@@ -29,7 +30,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     // Verify user still exists
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
-      select: { id: true, nfcId: true, phoneNumber: true }
+      select: { id: true, nfcId: true, phoneNumber: true, gender: true }
     });
 
     if (!user) {
@@ -37,6 +38,14 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     }
 
     req.user = user;
+
+    // If the user's gender is male, append gender=male to every URL
+    if (user.gender === 'MALE') {
+      req.url = req.url + '?gender=male';
+    } else if (user.gender === 'FEMALE') {
+      req.url = req.url + '?gender=female';
+    }
+
     next();
   } catch (error) {
     return res.status(403).json({ success: false, message: 'Invalid token' });

@@ -199,7 +199,7 @@ const SignupPage = () => {
       if (result.success) {
         console.log('✅ Signup successful:', result.user?.name);
         // Redirect to main app (explore page)
-        router.push('/male/explore');
+        router.push('/explore');
       } else {
         setErrors({ 
           general: result.message || 'Signup failed. Please try again.' 

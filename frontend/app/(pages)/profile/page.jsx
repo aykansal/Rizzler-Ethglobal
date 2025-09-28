@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authService, interactionService } from '../../../../services/index.js';
+import { authService, interactionService } from '../../../services/index.js';
 import { Settings, Edit3, Heart, Users, LogOut } from 'lucide-react';
 import { SettingsIcon, PlusIcon, XIcon, CameraIcon } from 'lucide-react';
 
@@ -13,6 +12,26 @@ const ProfilePage = () => {
   const [matches, setMatches] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [profileData, setProfileData] = useState({
+    id: 1,
+    name: 'John',
+    age: 26,
+    bio: 'Love hiking and coffee ☕',
+    photos: [
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=600&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=600&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=600&fit=crop&crop=face'
+    ],
+    interests: ['Travel', 'Photography', 'Fitness'],
+    prompts: [
+      { question: 'My ideal first date', answer: 'A sunset hike followed by coffee ☕' },
+      { question: 'My biggest fear', answer: 'Running out of coffee beans' },
+      { question: 'My dream job', answer: 'Professional coffee taster' }
+    ]
+  });
+  const [newInterest, setNewInterest] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const loadProfileData = async () => {
@@ -105,27 +124,6 @@ const ProfilePage = () => {
     );
   }
 
-  const [profileData, setProfileData] = useState({
-    id: 1,
-    name: 'John',
-    age: 26,
-    bio: 'Love hiking and coffee ☕',
-    photos: [
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=face',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=600&fit=crop&crop=face',
-      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=600&fit=crop&crop=face',
-      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=600&fit=crop&crop=face'
-    ],
-    interests: ['Travel', 'Photography', 'Fitness'],
-    prompts: [
-      { question: 'My ideal first date', answer: 'A sunset hike followed by coffee ☕' },
-      { question: 'I\'m weirdly attracted to', answer: 'People who can make me laugh until I cry' },
-      { question: 'The way to my heart', answer: 'Surprise me with my favorite book' }
-    ]
-  });
-
-  const [newInterest, setNewInterest] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
 
   const handleInputChange = (field, value) => {
     setProfileData(prev => ({

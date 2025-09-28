@@ -64,7 +64,7 @@ const LoginPage = () => {
       if (result.success) {
         console.log('✅ Login successful:', result.user?.name);
         // Redirect to main app (explore page)
-        router.push('/male/explore');
+        router.push('/explore');
       } else {
         setErrors({ 
           general: result.message || 'Login failed. Please check your credentials.' 
