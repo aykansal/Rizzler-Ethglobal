@@ -19,15 +19,17 @@ const SignupPage = () => {
     gender: '',
     bio: '',
     
-    // Step 2: Interests & Prompts
+    // Step 2: Interests
     interests: [],
+    
+    // Step 3: Prompts
     prompts: [
       { question: 'My ideal first date', answer: '' },
       { question: 'I\'m weirdly attracted to', answer: '' },
       { question: 'The way to my heart', answer: '' }
     ],
     
-    // Step 3: Photos
+    // Step 4: Photos
     photos: []
   });
   
@@ -142,6 +144,12 @@ const SignupPage = () => {
   };
 
   const validateStep3 = () => {
+    // Prompts are optional, so always return true
+    setErrors({});
+    return true;
+  };
+
+  const validateStep4 = () => {
     if (formData.photos.filter(photo => photo).length === 0) {
       setErrors({ photos: 'Please upload at least one photo' });
       return false;
@@ -155,6 +163,8 @@ const SignupPage = () => {
       setCurrentStep(2);
     } else if (currentStep === 2 && validateStep2()) {
       setCurrentStep(3);
+    } else if (currentStep === 3 && validateStep3()) {
+      setCurrentStep(4);
     }
   };
 
@@ -167,7 +177,7 @@ const SignupPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateStep3()) {
+    if (!validateStep4()) {
       return;
     }
     
@@ -466,7 +476,11 @@ const SignupPage = () => {
           <p className="text-xs text-red-600 text-center mt-2">{errors.interests}</p>
         )}
       </div>
+    </div>
+  );
 
+  const renderStep3 = () => (
+    <div className="space-y-6">
       {/* Prompts Section */}
       <div>
         <div className="text-center mb-4">
@@ -500,7 +514,7 @@ const SignupPage = () => {
     </div>
   );
 
-  const renderStep3 = () => (
+  const renderStep4 = () => (
     <div className="space-y-4">
       <div className="text-center mb-4">
         <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--foreground)' }}>
@@ -573,14 +587,14 @@ const SignupPage = () => {
                 Create Account
               </h1>
               <span className="text-xs text-gray-500">
-                Step {currentStep} of 3
+                Step {currentStep} of 4
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div 
                 className="h-1.5 rounded-full transition-all duration-500"
                 style={{ 
-                  width: `${(currentStep / 3) * 100}%`,
+                  width: `${(currentStep / 4) * 100}%`,
                   background: 'linear-gradient(135deg, var(--signature) 0%, var(--signature-2) 100%)'
                 }}
               ></div>
@@ -599,6 +613,7 @@ const SignupPage = () => {
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
             {currentStep === 3 && renderStep3()}
+            {currentStep === 4 && renderStep4()}
 
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-6">
@@ -615,7 +630,7 @@ const SignupPage = () => {
                 Previous
               </button>
 
-              {currentStep < 3 ? (
+              {currentStep < 4 ? (
                 <button
                   type="button"
                   onClick={nextStep}
